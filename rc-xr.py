@@ -8,29 +8,27 @@ from argparse import ArgumentParser
 from requests.auth import HTTPBasicAuth
 
 
-def send_request(protocol, host, port, username, password):
+def send_request(protocol, host, port, url, outputformat, username, password):
+    print(url)
     '''Generate a simple RESTCONF request.
     '''
     # url = "{}://{}:{}/restconf/data/Cisco-IOS-XR-ifmgr-cfg:interface-configurations/interface-configuration=act,GigabitEthernet0%2f0%2f0%2f0/description".format(
-    url = "{}://{}:{}/restconf/data/Cisco-IOS-XR-ifmgr-cfg:interface-configurations".format(
-        protocol, host, port)
+    url = "{}://{}:{}{}".format(
+        protocol, host, port, url)
     try:
         response = requests.get(
             auth=HTTPBasicAuth(username, password),
             url=url,
-            params={
-                "content": "config",
-            },
-            headers={
-                "Accept": "application/yang.data+json, application/yang.errors+json",
-            },
+            headers={ 'Accept': ("application/yang-data+%s" % outputformat), 'Content-Type': ("application/yang-data+%s" % outputformat) },
+            verify=False
         )
-        print('Response HTTP Status Code: {status_code}'.format(
-            status_code=response.status_code))
-        print('Response HTTP Response Body: {content}'.format(
-            content=response.content))
+        #print('Response HTTP Status Code: {status_code}'.format(
+        #    status_code=response.status_code))
+        #print('Response HTTP Response Body: {content}'.format(
+        #    content=response.content))
+        print(response.content.decode("utf-8"))
     except requests.exceptions.RequestException:
-        print('HTTP Request failed')
+        print(str('HTTP Request failed'))
 
 
 if __name__ == '__main__':
@@ -42,11 +40,15 @@ if __name__ == '__main__':
                         help="The device IP or DN")
     parser.add_argument('-u', '--username', type=str, default='cisco',
                         help="Go on, guess!")
+    parser.add_argument('-U', '--url', type=str, default='/restconf/data/Cisco-IOS-XE-native:native',
+                        help="ohhh no man url you know...reallyi not?")
     parser.add_argument('-p', '--password', type=str, default='cisco',
                         help="Yep, this one too! ;-)")
+    parser.add_argument('-o', '--outputformat', type=str, default='json',
+                        help="can be xml or json...forget something else")
     parser.add_argument('--port', type=int, default=830,
                         help="Specify this if you want a non-default port")
 
     args = parser.parse_args()
 
-    send_request( "http", args.host, args.port, args.username, args.password)
+    send_request( "https", args.host, args.port, args.url, args.outputformat, args.username, args.password)
